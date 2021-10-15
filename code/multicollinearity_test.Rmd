@@ -1,0 +1,32 @@
+---
+title: "multicollinearity test"
+output: html_document
+---
+
+## Load data && Preprocess
+```{r setup, include=FALSE}
+data=read.csv("/Users/violaliu/Downloads/BodyFat.csv")
+attach(data)
+print(summary(data))
+```
+
+### From the summary, we can speculate that there may be several outliers due to inaccuracy of measurement. We took a closer look at the specific samples including outliers. (Then we checked BMI recorded with weight and height recorded among those three people to see if there is any obvious error.-No obvious error.) We delete the sample with bodyfat=0.0 
+
+```{r}
+data[data$AGE==81|data$BODYFAT==45.10|data$BODYFAT==45.10|data$BODYFAT==0.00|data$WEIGHT==363.15, ]
+
+data_removed=data[data$BODYFAT!=0.0,]
+```
+
+## Correlation between independent variables
+
+### VIF
+#### check sets of variables, to see if they are independendent(can pass VIF test)
+##### vif of remained feature density, abdomen, adiposity, age, chest
+```{r }
+model_vif_2<-lm(BODYFAT~ AGE+CHEST+ABDOMEN+DENSITY +ADIPOSITY,data=data_removed)
+
+ols_vif_tol(model_vif_2)
+
+```
+#### delete abdomen
