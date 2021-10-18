@@ -40,6 +40,7 @@ data
 #remove 0 bodyfat
 data = data[-which(data$BODYFAT==0),]
 data = data[-39,]
+data = data[-216,]
 ```
 
 ```{r}
