@@ -1,0 +1,183 @@
+---
+title: "stat628-proj2-regression"
+output:
+  pdf_document: default
+  html_document: default
+---
+## Correlation between independent variables
+
+### VIF
+#### check sets of variables, to see if they are independendent(can pass VIF test)
+##### all variables
+```{r }
+library(olsrr)
+model_vif<-lm(BODYFAT~ AGE+WEIGHT + HEIGHT+ADIPOSITY+NECK+CHEST+ABDOMEN+HIP+THIGH+KNEE+ANKLE+BICEPS+FOREARM+WRIST,data=data_removed)
+
+ols_vif_tol(model_vif)
+
+```
+##### vif of remained feature density, abdomen, adiposity, age, chest
+#### abdomen delete
+```{r }
+model_vif_2<-lm(BODYFAT~ AGE+CHEST+ABDOMEN+DENSITY +ADIPOSITY,data=data_removed)
+
+ols_vif_tol(model_vif_2)
+
+```
+
+##### keep weight, remove other variables, of which VIF above 10
+```{r }
+model_vif_2<-lm(BODYFAT~ AGE+WEIGHT + HEIGHT+NECK+KNEE+ANKLE+BICEPS+FOREARM+WRIST,data=data_removed)
+
+ols_vif_tol(model_vif_2)
+
+```
+
+##### keep BMI, remove other variables, of which VIF above 10
+```{r }
+model_vif_3<-lm(BODYFAT~ AGE+ADIPOSITY+NECK+KNEE+ANKLE+BICEPS+FOREARM+WRIST,data=data_removed)
+
+ols_vif_tol(model_vif_3)
+
+```
+
+## Stepwise Linear Regression
+### include bmi,age,neck,knee,ankle,biceps,forearm,wrist
+
+### Test&Train set split
+```{r}
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(data_removed))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data_removed)), size = smp_size)
+
+train <- data_removed[train_ind, ]
+test <- data_removed[-train_ind, ]
+
+```
+
+### Train
+```{r }
+
+library(MASS)
+full_model<-lm(BODYFAT~ AGE+ADIPOSITY+NECK+KNEE+ANKLE+BICEPS+FOREARM+WRIST,data=train)
+
+# Stepwise regression model
+step_model <- stepAIC(full_model, direction = "backward", 
+                      trace = FALSE)
+result<-summary(step_model)
+mse<-mean(result$residuals^2)
+print("linear model:")
+print(result)
+print(paste0("MSE of train set is ",mse))
+
+##Test
+prediction<-predict(step_model,newdata=test)
+mse_test=mean((test$BODYFAT-prediction)^2)
+print(paste0("MSE of test set is ",mse_test))
+
+```
+### only keep variables with p-value<0.01
+```{r}
+simple_model_1<-lm(BODYFAT~ AGE+ADIPOSITY+WRIST,data=train)
+result<-summary(simple_model_1)
+mse<-mean(result$residuals^2)
+print("linear model:")
+print(result)
+print(paste0("MSE of train set is ",mse))
+
+##Test
+prediction<-predict(simple_model_1,newdata=test)
+mse_test=mean((test$BODYFAT-prediction)^2)
+print(paste0("MSE of test set is ",mse_test))
+
+```
+### only keep age and bmi
+```{r}
+simple_model_1<-lm(BODYFAT~ AGE+ADIPOSITY,data=train)
+result<-summary(simple_model_1)
+mse<-mean(result$residuals^2)
+print("linear model:")
+print(result)
+print(paste0("MSE of train set is ",mse))
+
+##Test
+prediction<-predict(simple_model_1,newdata=test)
+mse_test=mean((test$BODYFAT-prediction)^2)
+print(paste0("MSE of test set is ",mse_test))
+
+```
+
+### include height,weight,age,neck,knee,ankle,biceps,forearm,wris
+```{r}
+full_model_2<-lm(BODYFAT~ AGE+WEIGHT+HEIGHT+NECK+KNEE+ANKLE+BICEPS+FOREARM+WRIST,data=train)
+
+# Stepwise regression model
+step_model_2 <- stepAIC(full_model_2, direction = "backward", 
+                      trace = FALSE)
+result_2<-summary(step_model_2)
+mse_2<-mean(result_2$residuals^2)
+print("linear model:")
+print(result_2)
+print(paste0("MSE of train set is ",mse_2))
+
+##Test
+prediction_2<-predict(step_model_2,newdata=test)
+mse_test_2=mean((test$BODYFAT-prediction_2)^2)
+print(paste0("MSE of test set is ",mse_test_2))
+
+
+
+```
+### only keep variables with p-value<0.001
+```{r}
+simple_model_3<-lm(BODYFAT~ AGE+WEIGHT+HEIGHT+WRIST,data=train)
+
+
+result<-summary(simple_model_3)
+mse<-mean(result$residuals^2)
+print("linear model:")
+print(result)
+print(paste0("MSE of train set is ",mse))
+
+##Test
+prediction<-predict(simple_model_3,newdata=test)
+mse_test=mean((test$BODYFAT-prediction)^2)
+print(paste0("MSE of test set is ",mse_test))
+
+```
+### Only keep age and height,weight
+```{r}
+simple_model_4<-lm(BODYFAT~ AGE+WEIGHT+HEIGHT,data=train)
+
+
+result<-summary(simple_model_4)
+mse<-mean(result$residuals^2)
+print("linear model:")
+print(result)
+print(paste0("MSE of train set is ",mse))
+
+##Test
+prediction<-predict(simple_model_4,newdata=test)
+mse_test=mean((test$BODYFAT-prediction)^2)
+print(paste0("MSE of test set is ",mse_test))
+```
+
+
+### Final validation
+```{r}
+library(caret)
+# Define training control
+set.seed(123) 
+train.control <- trainControl(method = "cv", number = 5)
+# Train the model
+model <- train(BODYFAT~ AGE+ADIPOSITY, data = data_removed, method = "lm",
+               trControl = train.control)
+# Summarize the results
+print(model)
+
+model$resample
+
+```
